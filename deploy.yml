@@ -1,0 +1,11 @@
+---
+- name: Configure host os
+  hosts: servers
+  become: True
+  tasks:
+    - import_tasks: os-configure.yml
+
+- name: Deploy Transmission
+  hosts: servers
+  tasks:
+  - import_tasks: transmission.yml

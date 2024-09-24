@@ -1,0 +1,34 @@
+---
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+
+  - name: Install packages
+    apt:
+      pkg:
+        - apt-transport-https
+        - nfs-common
+
+  - name: Add the docker repo key
+    ansible.builtin.apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Add docker apt repository
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+      state: present
+      update_cache: yes
+      filename: docker
+
+  - name: Install docker
+    apt:
+      name: docker-ce
+      state: present
+
+  - name: Add {{ ansible_user }} user to docker group
+    user:
+      name: '{{ ansible_user }}'
+      groups: docker
+      append: yes

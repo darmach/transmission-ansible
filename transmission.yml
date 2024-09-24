@@ -1,0 +1,94 @@
+---
+  - name: Create group
+    become: True
+    group:
+      name: "smb"
+      state: present
+      gid: 1001
+
+  - name: Create user
+    become: True
+    user:
+      name: "transmission"
+      state: present
+      uid: 982
+      group: "smb"
+      shell: /bin/bash
+
+  - name: Create directories
+    become: True
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: "transmission"
+      mode: "0700"
+    loop:
+      - "{{ path }}"
+      - "{{ path }}/openvpn"
+      - "{{ path }}/config"
+      - "{{ path }}/config/transmission-home"
+      - "{{ path }}/shares"
+
+  - name: Extract configs for openvpn
+    become: True
+    ansible.builtin.unarchive:
+      owner: "transmission"
+      mode: "0400"
+      src: "{{ providers.config}}"
+      dest: "{{ path }}/openvpn"
+
+  - name: Create mountpoints
+    become: True
+    file:
+      path: "{{ path }}/{{ item }}"
+      state: directory
+      owner: "transmission"
+      mode: "0775"
+    loop: "{{ shares}}"
+
+  - name: Mount storage
+    become: True
+    ansible.posix.mount:
+      src: "{{ nas }}:/{{ item }}"
+      path: "{{ path }}/{{ item }}"
+      fstype: nfs
+      opts: rw,async,soft
+      state: mounted
+    loop: "{{ shares }}"
+
+  - name: Template files
+    become: True
+    template:
+      src: "{{ item.key }}"
+      dest: "{{ item.value.path }}"
+      owner: "{{ item.value.owner }}"
+      mode: "0600"
+    with_dict:
+      "template/settings.json.j2":
+        path: "{{ path }}/config/transmission-home/settings.json"
+        owner: transmission
+      "template/docker-compose.yml.j2":
+        path: "{{ path }}/docker-compose.yml"
+        owner: root
+    register: templates
+
+  - name: Restart transmission container
+    community.docker.docker_container:
+      name: transmission-openvpn
+      restart: true
+    when: templates.results[0].changed and not templates.results[1].changed
+
+
+  - name: Docker compose
+    become: True
+    block:
+      - name: Run docker compose up
+        community.docker.docker_compose_v2:
+          project_src: {{ path }}
+        register: output
+
+      - name: Show results
+        ansible.builtin.debug:
+          var: output.actions
+
+    when: templates.results[1].changed

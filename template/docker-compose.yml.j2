@@ -1,0 +1,39 @@
+services:
+    transmission-openvpn:
+        container_name: transmission-openvpn
+        restart: always
+        cap_add:
+            - NET_ADMIN
+        volumes:
+            - './shares:/shares'
+            - './config:/config'
+            - './openvpn:/etc/openvpn/custom'
+        environment:
+            - TZ={{ timezone }}
+            - PUID=982
+            - PGID=1001
+            # - OPENVPN_PROVIDER=custom
+            # - OPENVPN_CONFIG={{ providers.airvpn.config }}
+            # - OPENVPN_USERNAME={{ providers.airvpn.username }}
+            # - OPENVPN_PASSWORD={{ providers.airvpn.password }}
+            - OPENVPN_PROVIDER=NORDVPN
+            - OPENVPN_USERNAME={{ providers.nordvpn.username }}
+            - OPENVPN_PASSWORD={{ providers.nordvpn.password }}
+            - NORDVPN_COUNTRY={{ providers.nordvpn.country }}
+            - NORDVPN_CATEGORY=P2P
+            - LOCAL_NETWORK=192.168.0.0/22
+            - TRANSMISSION_DOWNLOAD_DIR=/shares
+            - TRANSMISSION_RPC_AUTHENTICATION_REQUIRED=true
+            - TRANSMISSION_RPC_USERNAME={{ rpc_user }}
+            - TRANSMISSION_RPC_PASSWORD={{ rpc_password }}
+            - TRANSMISSION_RPC_WHITELIST={{ rpc_whitelist }}
+            - TRANSMISSION_RPC_ENABLED=true
+            # - TRANSMISSION_PORT_FORWARDING_ENABLED=true
+            - TRANSMISSION_PEER_PORT={{ peer_port }}
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+        ports:
+            - '9091:9091'
+        image: haugene/transmission-openvpn
