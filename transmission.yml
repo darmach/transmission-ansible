@@ -31,7 +31,7 @@
 
   - name: Extract configs for openvpn
     become: True
-    ansible.builtin.unarchive:
+    unarchive:
       owner: "transmission"
       mode: "0400"
       src: "{{ providers.config}}"
@@ -48,7 +48,7 @@
 
   - name: Mount storage
     become: True
-    ansible.posix.mount:
+    mount:
       src: "{{ nas }}:/{{ item }}"
       path: "{{ path }}/{{ item }}"
       fstype: nfs
@@ -84,7 +84,7 @@
     block:
       - name: Run docker compose up
         community.docker.docker_compose_v2:
-          project_src: {{ path }}
+          project_src: "{{ path }}"
         register: output
 
       - name: Show results
