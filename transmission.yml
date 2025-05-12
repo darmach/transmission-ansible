@@ -59,6 +59,7 @@
   - name: Template files
     become: True
     template:
+      backup: True
       src: "{{ item.key }}"
       dest: "{{ item.value.path }}"
       owner: "{{ item.value.owner }}"
